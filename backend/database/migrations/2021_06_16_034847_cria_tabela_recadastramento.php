@@ -49,7 +49,7 @@ class CriaTabelaRecadastramento extends Migration {
             $table->string('numero_te', 20);
             $table->string('zona_te', 10);
             $table->string('secao_te', 10);
-            $table->unsignedBigInteger('grauInstrucao');
+            $table->unsignedBigInteger('grau_instrucao');
             $table->string('codigo');
             $table->string('situacao', 20);
             $table->text('motivo_situacao')->nullable();

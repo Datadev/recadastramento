@@ -96,7 +96,7 @@ class RecadastramentoController extends Controller {
             $z01_numero = $this->prepararValor($recadastramento->numero, '0');
             $z01_compl = $this->prepararValor($recadastramento->complemento);
             $z01_bairro = $this->prepararValor($recadastramento->bairro);
-            $z01_munic = $this->prepararValor($recadastramento->munic);
+            $z01_munic = $this->prepararValor($recadastramento->cidade);
             $z01_uf = $this->prepararValor(ConfiguracaoController::UF[$recadastramento->uf]);
             $z01_cep = $this->prepararValor($recadastramento->cep);
             $z01_cgccpf = $this->prepararValor($recadastramento->cpf);

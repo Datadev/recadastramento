@@ -18,7 +18,7 @@ class AdministradorSeeder extends Seeder {
         /** @var User $usuario */
         $usuario = User::create([
                     'login' => 'admin',
-                    'nome' => 'Administrsdor',
+                    'nome' => 'Administrador',
                     'senha' => Hash::make('123'),
                     'email' => 'teste@teste.com',
                     'validado' => true,
