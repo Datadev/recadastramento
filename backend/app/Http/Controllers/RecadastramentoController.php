@@ -38,12 +38,15 @@ class RecadastramentoController extends Controller {
             return response()->json(['message' => 'Recurso não encontrado'], 400);
         }
         
+        /** @var User $servidor */
+        $servidor = User::where('login', $recadastramento->matricula)->first();
+        
         $recadastramento->situacao = $request->situacao;
 
         if ($recadastramento->situacao === 'A') {
             try {
                 $this->gravarECidade($recadastramento);
-                $this->enviarEmailRecadastramentoAprovado($recadastramento, $usuario);
+                $this->enviarEmailRecadastramentoAprovado($recadastramento, $servidor);
                 $recadastramento->save();
             } catch (Exception $ex) {
                 Log::error($ex);
@@ -52,7 +55,7 @@ class RecadastramentoController extends Controller {
         } else if ($recadastramento->situacao === 'R') {
             $recadastramento->motivoSituacao = $request->motivoSituacao;
             $recadastramento->save();
-            $this->enviarEmailRecadastramentoRecusado($recadastramento, $usuario);
+            $this->enviarEmailRecadastramentoRecusado($recadastramento, $servidor);
         }
 
         return response()->json($recadastramento);
@@ -88,6 +91,7 @@ class RecadastramentoController extends Controller {
                             ['matricula' => $recadastramento->matricula])[0]->z01_numcgm);
 
             $z01_nome = $this->prepararValor($recadastramento->nome);
+            $z01_nomecomple = $this->prepararValor($recadastramento->nome);
             $z01_pai = $this->prepararValor($recadastramento->pai);
             $z01_mae = $this->prepararValor($recadastramento->mae);
             $z01_telef = $this->prepararValor($recadastramento->telefone);
@@ -121,6 +125,7 @@ class RecadastramentoController extends Controller {
                     ->unprepared("SET search_path TO $searchPath;
                     UPDATE protocolo.cgm SET 
                         z01_nome = $z01_nome,
+                        z01_nomecomple = $z01_nomecomple, 
                         z01_pai = $z01_pai,
                         z01_mae = $z01_mae,
                         z01_telef = $z01_telef,
