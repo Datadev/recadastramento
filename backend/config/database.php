@@ -13,7 +13,7 @@ return [
     |
     */
 
-    'default' => env('DB_CONNECTION', 'mysql'),
+    'default' => env('DB_CONNECTION', 'pgsql'),
 
     /*
     |--------------------------------------------------------------------------
@@ -50,7 +50,7 @@ return [
             'driver' => 'pgsql',
             'host' => env('DB_HOST_ECIDADE', '127.0.0.1'),
             'port' => env('DB_PORT_ECIDADE', 5432),
-            'database' => env('DB_DATABASE_ECIDADE', 'forge'),
+            'database' => env('APP_ENV') !== 'production' ? env('DB_DATABASE_ECIDADE', 'forge') . date('Ymd', strtotime("-1 days")) . '_2200' : env('DB_DATABASE_ECIDADE', 'forge'),
             'username' => env('DB_USERNAME_ECIDADE', 'forge'),
             'password' => env('DB_PASSWORD_ECIDADE', ''),
             'charset' => env('DB_CHARSET_ECIDADE', 'utf8'),
