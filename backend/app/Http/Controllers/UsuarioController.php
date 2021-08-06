@@ -17,9 +17,20 @@ use function iconv;
 use function response;
 
 class UsuarioController extends Controller {
-
+    
+    public const CONDICAO_SERVIDOR_ATIVO = "NOT EXISTS (
+        SELECT
+            1
+        FROM 
+            pessoal.rhpessoalmov pm
+            INNER JOIN pessoal.rhpesrescisao pr ON pm.rh02_seqpes = pr.rh05_seqpes 
+        WHERE
+            pm.rh02_regist = p.rh01_regist
+    )";
+    
     const DEFAULT_ROLE = 'servidor';
     const EXPIRACAO_VALIDACAO_EM_HORAS = 4;
+    
 
     public function gerarSenha(Request $request) {
         if ($this->isPodeGerarSenha($request->matricula, $request->cpf, $request->nascimento)) {
@@ -118,7 +129,9 @@ class UsuarioController extends Controller {
     }
 
     private function isPodeGerarSenha($matricula, $cpf, $nascimento): bool {
-        $resultado = DB::connection('ecidade')->select('
+        $condicaoServidorAtivo = UsuarioController::CONDICAO_SERVIDOR_ATIVO;
+        
+        $resultado = DB::connection('ecidade')->select("
             SELECT
                 p.rh01_regist,
                 c.z01_nome,
@@ -129,9 +142,10 @@ class UsuarioController extends Controller {
                 pessoal.rhpessoal p
                 INNER JOIN protocolo.cgm c ON p.rh01_numcgm = c.z01_numcgm 
             WHERE 
-                p.rh01_regist = :matricula
+                $condicaoServidorAtivo
+                AND p.rh01_regist = :matricula
                 AND p.rh01_nasc = :nascimento
-                AND c.z01_cgccpf = :cpf', [
+                AND c.z01_cgccpf = :cpf", [
             'matricula' => $matricula,
             'nascimento' => $nascimento,
             'cpf' => $cpf

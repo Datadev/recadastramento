@@ -20,6 +20,8 @@ class Recadastramento extends BaseModel implements Auditable {
         'A' => 'Aprovado',
         'P' => 'Pendente',
         'R' => 'Recusado',
+        'S' => 'Somente recusados',
+        'N' => 'Não realizado'
     ];
     
     protected $table = 'recadastramento';

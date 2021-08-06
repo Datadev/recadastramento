@@ -9,6 +9,7 @@ use App\Models\Recadastramento;
 use App\Models\User;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -278,6 +279,13 @@ class RecadastramentoController extends Controller {
         $page = $request->page ?? 0;
         $per_page = $request->per_page ?? 10;
         $situacao = $request->situacao;
+        
+        if ($situacao === 'S') {
+            return response()->json($this->listarSomenteRecusados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page));
+        }
+        if ($situacao === 'N') {
+            return response()->json($this->listarNaoRealizados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $request));
+        }
 
         $retorno = Recadastramento::query()
                 ->when($matricula, function ($q) use ($matricula) {
@@ -298,6 +306,89 @@ class RecadastramentoController extends Controller {
                 ->paginate($per_page, ['*'], 'page', $page);
         return response()->json($retorno);
     }
+    
+    private function listarSomenteRecusados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page) {
+        $retorno = Recadastramento::query()
+                ->when($matricula, function ($q) use ($matricula) {
+                    return $q->where('matricula', $matricula);
+                })
+                ->when($filter, function($q) use ($filter) {
+                    return $q->where(function($query) use ($filter) {
+                        $query
+                        ->orWhereRaw('lower(matricula::text) like ?', ['%' . strtolower($filter) . '%'])
+                        ->orWhereRaw('lower(codigo) like ?', ['%' . strtolower($filter) . '%'])
+                        ->orWhereRaw('lower(nome) like ?', ['%' . strtolower($filter) . '%']);
+                    });
+                })
+                ->whereNotExists(function($query){
+                    $query->select(DB::raw(1))
+                            ->from('recadastramento as r2')
+                            ->whereRaw('recadastramento.matricula = r2.matricula')
+                            ->where('situacao', 'A');
+                })
+                ->where('situacao', 'R')
+                ->orderBy($orderBy, $sortOrder)
+                ->paginate($per_page, ['*'], 'page', $page);
+        return $retorno;
+    }
+    
+    private function listarNaoRealizados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $request) {
+        $condicaoServidorAtivo = UsuarioController::CONDICAO_SERVIDOR_ATIVO;
+
+        $eCidadeDatabaseHost = env('DB_HOST_ECIDADE');
+        $eCidadeDatabaseName = DB::connection('ecidade')->getDatabaseName();
+        $eCidadeDatabaseUser = env('DB_USERNAME_ECIDADE');
+        $eCidadeDatabasePassword = env('DB_PASSWORD_ECIDADE');
+        
+        $condicao = '';
+        if (isset($filter) && trim($filter) !== '') {
+            $filter = strtolower(pg_escape_string($filter));
+            $condicao .= " and (lower(e.matricula::text) like '%$filter%' or lower(e.nome) like '%$filter%') ";
+        }
+        if (isset($matricula) && trim($matricula) !== '') {
+            $matricula = pg_escape_string($filter);
+            $condicao .= " and e.matricula::text = '$$matricula' ";
+        }
+                
+        $consulta = "SELECT 
+            r.created_at AS createdAt,
+            r.codigo,
+            'N' AS situacao,
+            e.matricula,
+            e.nome
+        FROM
+            dblink('host=$eCidadeDatabaseHost dbname=$eCidadeDatabaseName user=$eCidadeDatabaseUser password=$eCidadeDatabasePassword', $$
+                SELECT
+                    c.z01_numcgm AS matricula,
+                    c.z01_nome AS nome
+                FROM 
+                    pessoal.rhpessoal p
+                    INNER JOIN protocolo.cgm c ON p.rh01_numcgm = c.z01_numcgm 
+                WHERE
+                    $condicaoServidorAtivo
+                $$) AS e (
+                    matricula int,
+                    nome char(40)
+                )
+            LEFT JOIN recadastramento r ON e.matricula = r.matricula 
+        WHERE 
+            r.codigo IS NULL
+            $condicao
+        ORDER BY
+            $orderBy $sortOrder";
+        
+        return $this->arrayPaginator(DB::select(DB::raw($consulta)), $per_page, $page, $request);
+    }
+    
+    private function arrayPaginator($array, $per_page, $page, $request){
+        if ($page === 0) {
+            $page++;
+        }
+        $offset = ($page * $per_page) - $per_page;
+        return new LengthAwarePaginator(array_slice($array, $offset, $per_page), count($array), $per_page, $page,
+            ['path' => $request->url(), 'query' => $request->query()]);
+    }
+
 
     public function listarArquivo($idRecadastramento) {
         $retorno = Arquivo::where('id_recadastramento', $idRecadastramento)->get();
@@ -324,7 +415,6 @@ class RecadastramentoController extends Controller {
             ];
             return response()->json($retorno, 400);
         }
-
 
         $recadastramento = $this->adicionarRecadastramento($request);
         $this->adicionarEscolaridade($request, $recadastramento);
@@ -418,5 +508,4 @@ class RecadastramentoController extends Controller {
             }
         }
     }
-
 }
