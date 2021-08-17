@@ -171,6 +171,7 @@ class TokenController extends Controller {
             'token' => 'access',
             'login' => $usuario->login,
             'roles' => $usuario->getRoleNames(),
+            'email' => $usuario->email,
         ];
         return JWT::encode($payload, env('JWT_KEY'));
     }
