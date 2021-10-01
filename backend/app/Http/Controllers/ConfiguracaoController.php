@@ -21,6 +21,7 @@ class ConfiguracaoController extends Controller {
         3 => 'VIUVO',
         4 => 'SEP. CONSENSUAL',
         5 => 'DIVORCIADO',
+        6 => 'UNIÃO ESTÁVEL',
     ];
     public const PERFIS = [
         'administrador' => 'Administrador',

@@ -46,13 +46,17 @@ class Escolaridade extends BaseModel implements Auditable {
             'descricao' => 'EDUCAÇÃO SUPERIOR COMPLETA',
             'habilita' => 'SUPERIOR',
         ],
+        12 => [
+            'descricao' => 'PÓS GRADUACAO',
+            'habilita' => 'SUPERIOR|POS'
+        ],
         10 => [
             'descricao' => 'MESTRADO COMPLETO',
-            'habilita' => 'SUPERIOR|MESTRADO'
+            'habilita' => 'SUPERIOR|POS|MESTRADO'
         ],
         11 => [
             'descricao' => 'DOUTORADO COMPLETO',
-            'habilita' => 'SUPERIOR|MESTRADO|DOUTORADO',
+            'habilita' => 'SUPERIOR|POS|MESTRADO|DOUTORADO',
         ],
     ];
     

@@ -151,9 +151,9 @@ class RecadastramentoController extends Controller {
 
             $rh01_regist = $this->prepararValor($recadastramento->matricula);
             $rh01_sexo = $this->prepararValor($recadastramento->sexo);
-            $rh01_estciv = $this->prepararValor($recadastramento->estadoCivil);
+            $rh01_estciv = $this->prepararValor($this->deParaEstadoCivil($recadastramento->estadoCivil));
             $rh01_nasc = $this->prepararValor($recadastramento->nascimento);
-            $rh01_instru = $this->prepararValor($recadastramento->grauInstrucao);
+            $rh01_instru = $this->prepararValor($this->deParaGrauInstrucao($recadastramento->grauInstrucao));
 
             DB::connection('ecidade')
                     ->unprepared("SET search_path TO $searchPath;
@@ -260,6 +260,22 @@ class RecadastramentoController extends Controller {
             DB::connection('ecidade')->rollBack();
             throw new Exception('Falha ao gravar na base do e-Cidade.');
         }
+    }
+    
+    private function deParaEstadoCivil($valor): string {
+        $retorno = $valor;
+        if ($valor === '6'){
+            $retorno = '2';
+        }
+        return $retorno;
+    }
+    
+    private function deParaGrauInstrucao($valor): string {
+        $retorno = $valor;
+        if ($valor === '12'){
+            $retorno = '9';
+        }
+        return $retorno;
     }
 
     private function prepararValor($valor, $default = ''): string {
