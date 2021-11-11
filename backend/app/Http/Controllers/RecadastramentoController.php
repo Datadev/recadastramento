@@ -366,7 +366,7 @@ class RecadastramentoController extends Controller {
             $condicao .= " and e.matricula::text = '$$matricula' ";
         }
                 
-        $consulta = "SELECT 
+        $consulta = "SELECT DISTINCT
             r.created_at AS createdAt,
             r.codigo,
             'N' AS situacao,
@@ -374,8 +374,8 @@ class RecadastramentoController extends Controller {
             e.nome
         FROM
             dblink('host=$eCidadeDatabaseHost dbname=$eCidadeDatabaseName user=$eCidadeDatabaseUser password=$eCidadeDatabasePassword', $$
-                SELECT
-                    c.z01_numcgm AS matricula,
+                SELECT DISTICT
+                    p.rh01_regist AS matricula,
                     c.z01_nome AS nome
                 FROM 
                     pessoal.rhpessoal p
