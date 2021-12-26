@@ -107,6 +107,7 @@ $app->register(OwenIt\Auditing\AuditingServiceProvider::class);
 $app->register(Flipbox\LumenGenerator\LumenGeneratorServiceProvider::class);
 $app->register(Illuminate\Mail\MailServiceProvider::class);
 $app->register(Eloquence\EloquenceServiceProvider::class);
+$app->register(\Barryvdh\DomPDF\ServiceProvider::class);
 
 $app->configure('mail');
 $app->alias('mailer', Illuminate\Mail\Mailer::class);
@@ -114,6 +115,7 @@ $app->alias('mailer', Illuminate\Contracts\Mail\Mailer::class);
 $app->alias('mailer', Illuminate\Contracts\Mail\MailQueue::class);
 
 $app->configure('audit');
+$app->configure('dompdf');
 /*
   |--------------------------------------------------------------------------
   | Load The Application Routes

@@ -32,6 +32,7 @@ $router->group(['middleware' => 'auth'], function () use ($router) {
             $router->get('', 'RecadastramentoController@listar');
         });
         $router->group(['middleware' => ['role:validador']], function () use ($router) {
+            $router->get('download', 'RecadastramentoController@download');
             $router->get('{idRecadastramento}', 'RecadastramentoController@buscarPorId');
             $router->patch('{idRecadastramento}', 'RecadastramentoController@alterarSituacao');
             $router->get('{idRecadastramento}/dependente', 'RecadastramentoController@listarDependente');

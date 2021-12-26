@@ -7,6 +7,7 @@ use App\Models\Dependente;
 use App\Models\Escolaridade;
 use App\Models\Recadastramento;
 use App\Models\User;
+use Barryvdh\DomPDF\Facade as PDF;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -281,6 +282,32 @@ class RecadastramentoController extends Controller {
     private function prepararValor($valor, $default = ''): string {
         return sprintf("'%s'", isset($valor) ? iconv("UTF-8", "ISO-8859-1//TRANSLIT", pg_escape_string($valor)) : $default);
     }
+    
+    public function download(Request $request) {
+        ini_set('max_execution_time', 600);
+        $matricula = null;
+        $filter = $request->filter;
+        $orderBy = Str::snake($request->order_by ?? 'id');
+        $sortOrder = $request->sort_order ?? 'asc';
+        $per_page = PHP_INT_MAX;
+        $page = 0;
+        $situacao = $request->situacao;
+        $criterios = [
+            'filtro' => empty($filter) ? 'Nenhum' : $filter,
+            'ordenacao' => Recadastramento::CAMPOS_RECADASTRAMENTO[$orderBy] . ' ' . $sortOrder,
+            'situacao' => empty($situacao) ? 'Todos enviados' : Recadastramento::SITUACAO_RECADASTRAMENTO[$situacao],
+            'situacoes' => implode(', ', array_map(function ($v, $k) { return sprintf("%s=%s", $k, $v); }, Recadastramento::SITUACAO_RECADASTRAMENTO, array_keys(Recadastramento::SITUACAO_RECADASTRAMENTO))),
+        ];
+        if ($situacao === 'S') {
+            $recadastramentos = $this->listarSomenteRecusados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page);
+        } else if ($situacao === 'N') {
+            $recadastramentos = $this->listarNaoRealizados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $request);
+        } else {
+            $recadastramentos = $this->listarRecadastramentos($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $situacao)->items();
+        }
+        $pdf = PDF::loadView('recadastramento-consulta', compact('recadastramentos', 'criterios'));
+        return $pdf->download('consulta.pdf');
+    }
 
     public function listar(Request $request) {
         /** @var User $usuario */
@@ -302,7 +329,10 @@ class RecadastramentoController extends Controller {
         if ($situacao === 'N') {
             return response()->json($this->listarNaoRealizados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $request));
         }
-
+        return response()->json($this->listarRecadastramentos($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $situacao));
+    }
+    
+    private function listarRecadastramentos($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $situacao) {
         $retorno = Recadastramento::query()
                 ->when($matricula, function ($q) use ($matricula) {
                     return $q->where('matricula', $matricula);
@@ -320,7 +350,7 @@ class RecadastramentoController extends Controller {
                 })
                 ->orderBy($orderBy, $sortOrder)
                 ->paginate($per_page, ['*'], 'page', $page);
-        return response()->json($retorno);
+        return $retorno;
     }
     
     private function listarSomenteRecusados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page) {

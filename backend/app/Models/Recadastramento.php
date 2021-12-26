@@ -15,6 +15,13 @@ class Recadastramento extends BaseModel implements Auditable {
 
     use Auditable2;
     use CamelCasing;
+    
+    public const CAMPOS_RECADASTRAMENTO = [
+      'created_at' => 'Data',
+      'matricula' => 'Matrícula',
+      'codigo' => 'Protocolo',
+      'situacao' => 'Situação',
+    ];
 
     public const SITUACAO_RECADASTRAMENTO = [
         'A' => 'Aprovado',
