@@ -95,7 +95,7 @@
            Campanha: {{$criterios['campanha']}}<br/>
            Situações: {{$criterios['situacoes']}}
        </p>
-       <table border="1" width="100%">
+       <table border="1" width="100%" style="border-collapse: collapse;">
            <thead>
 		<tr>
                     <th>Data</th>
@@ -117,6 +117,7 @@
                 @endforeach
            </tbody>
        </table>
+       <p>Total de registros encontrados: {{count($recadastramentos)}}
 
 <!--        <footer>
            <hr/>

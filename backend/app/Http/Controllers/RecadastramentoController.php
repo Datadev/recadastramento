@@ -284,6 +284,14 @@ class RecadastramentoController extends Controller {
         return sprintf("'%s'", isset($valor) ? iconv("UTF-8", "ISO-8859-1//TRANSLIT", pg_escape_string($valor)) : $default);
     }
     
+    public function email() {
+        Mail::send('recadastramento-pendente', [], function ($message) {
+            $message
+                    ->to('daniel.libresolucoes@gmail.com')
+                    ->subject('Aviso de recadastramento pendente');
+        });
+    }
+    
     public function download(Request $request) {
         ini_set('max_execution_time', 600);
         $matricula = null;
