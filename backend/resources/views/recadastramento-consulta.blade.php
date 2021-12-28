@@ -26,7 +26,7 @@
       </xml>
       <![endif]--> 
       <style type="text/css">
-         div.minimalistBlack {
+/*         div.minimalistBlack {
             border: 3px solid #000000;
             width: 100%;
             text-align: left;
@@ -51,17 +51,17 @@
           .minimalistBlack .tableFootStyle {
             font-size: 14px;
           }
-          /* DivTable.com */
+           DivTable.com 
           .divTable{ display: table; }
           .divTableRow { display: table-row; }
           .divTableHeading { display: table-header-group;}
           .divTableCell, .divTableHead { display: table-cell;}
           .divTableHeading { display: table-header-group;}
           .divTableFoot { display: table-footer-group;}
-          .divTableBody { display: table-row-group;}
+          .divTableBody { display: table-row-group;}*/
       </style>
       <style>
-          footer {
+/*          footer {
                 position: fixed; 
                 bottom: -60px; 
                 left: 0px; 
@@ -80,7 +80,7 @@
             float: right;
             width : 50%;
             text-align: right;
-        }
+        }*/
       </style>
       
       <base href="#">
@@ -92,31 +92,33 @@
            Filtro: {{$criterios['filtro']}}<br/>
            Ordenação: {{$criterios['ordenacao']}}<br/>
            Situação: {{$criterios['situacao']}}<br/>
+           Campanha: {{$criterios['campanha']}}<br/>
            Situações: {{$criterios['situacoes']}}
        </p>
-       <div class="divTable minimalistBlack">
-           <div class="divTableHeading">
-               <div class="divTableRow">
-                   <div class="divTableHead">Data</div>
-                   <div class="divTableHead">Matrícula</div>
-                   <div class="divTableHead">Nome</div>
-                   <div class="divTableHead">Protocolo</div>
-                   <div class="divTableHead">Situação</div>
-               </div>
-           </div>
-           <div class="divTableBody">
-               @foreach($recadastramentos as $recadastramento)
-               <div class="divTableRow">
-                   <div class="divTableCell">{{isset($recadastramento->created_at) ? date('d/m/Y', strtotime($recadastramento->created_at)) : ''}}</div>
-                   <div class="divTableCell">{{$recadastramento->matricula}}</div>
-                   <div class="divTableCell">{{$recadastramento->nome}}</div>
-                   <div class="divTableCell">{{$recadastramento->codigo}}</div>
-                   <div class="divTableCell">{{$recadastramento->situacao}}</div>
-               </div>
-               @endforeach
-           </div>
-       </div>
-        <footer>
+       <table border="1" width="100%">
+           <thead>
+		<tr>
+                    <th>Data</th>
+                    <th>Matrícula</th>
+                    <th>Nome</th>
+                    <th>Protocolo</th>
+                    <th>Situação</th>
+                </tr>
+           </thead>
+           <tbody>
+                @foreach($recadastramentos as $recadastramento)
+		<tr>
+                    <td>{{isset($recadastramento->created_at) ? date('d/m/Y', strtotime($recadastramento->created_at)) : ''}}</td>
+                    <td>{{$recadastramento->matricula}}</td>
+                    <td>{{$recadastramento->nome}}</td>
+                    <td>{{$recadastramento->codigo}}</td>
+                    <td>{{$recadastramento->situacao}}</td>
+                </tr>
+                @endforeach
+           </tbody>
+       </table>
+
+<!--        <footer>
            <hr/>
            <div class="left">
                <span class="report-time">{{date('d/m/Y H:i:s')}}</span><br>
@@ -124,7 +126,7 @@
            <div class="right">
                <span class="page-number"></span>
            </div>
-       </footer>
+       </footer>-->
    </body>
 </html>
 

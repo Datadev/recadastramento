@@ -41,6 +41,16 @@ $router->group(['middleware' => 'auth'], function () use ($router) {
             $router->get('{idRecadastramento}/arquivo/{idArquivo}', 'RecadastramentoController@buscarArquivoPorId');
         });
     });
+    $router->group(['prefix' => 'campanha'], function () use ($router) {
+        $router->group(['middleware' => ['role:servidor|validador']], function () use ($router) {
+            $router->get('', 'CampanhaController@listar');
+        });
+        $router->group(['middleware' => ['role:validador']], function () use ($router) {
+            $router->post('', 'CampanhaController@criar');
+            $router->get('{idCampanha}', 'CampanhaController@buscarPorId');
+            $router->put('{idCampanha}', 'CampanhaController@alterarPorId');
+        });
+    });
     $router->group(['middleware' => ['role:administrador']], function () use ($router) {
         $router->group(['prefix' => 'usuario'], function () use ($router) {
             $router->get('', 'UsuarioController@listar');

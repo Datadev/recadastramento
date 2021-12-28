@@ -23,6 +23,20 @@ class ConfiguracaoController extends Controller {
         5 => 'DIVORCIADO',
         6 => 'UNIÃO ESTÁVEL',
     ];
+    public const MESES = [
+        1 => 'Janeiro',
+        2 => 'Fevereiro',
+        3 => 'Março',
+        4 => 'Abril',
+        5 => 'Maio',
+        6 => 'Junho',
+        7 => 'Julho',
+        8 => 'Agosto',
+        9 => 'Setembro',
+        10 => 'Outubro',
+        11 => 'Novembro',
+        12 => 'Dezembro',
+    ];
     public const PERFIS = [
         'administrador' => 'Administrador',
         'validador' => 'Validador',
@@ -31,6 +45,10 @@ class ConfiguracaoController extends Controller {
     public const SEXO = [
         'F' => 'Feminino',
         'M' => 'Masculino',
+    ];
+    public const SIMNAO = [
+        'S' => 'Sim',
+        'N' => 'Não',
     ];
     public const UF = [
         21 => 'RS',
@@ -70,8 +88,10 @@ class ConfiguracaoController extends Controller {
             'grauInstrucao' => $this->converterChaveValor(Escolaridade::GRAU_INSTRUCAO),
             'grauParentesco' => $this->converterChaveValor(Dependente::GRAU_PARENTESCO),
             'irf' => $this->converterChaveValor(Dependente::IRF),
+            'meses' => $this->converterChaveValor(self::MESES),
             'perfis' => $this->converterChaveValor(self::PERFIS),
             'sexo' => $this->converterChaveValor(self::SEXO),
+            'simnao' => $this->converterChaveValor(self::SIMNAO),
             'situacaoRecadastramento' => $this->converterChaveValor(Recadastramento::SITUACAO_RECADASTRAMENTO),
             'uf' => $this->converterChaveValor(self::UF),
         ];

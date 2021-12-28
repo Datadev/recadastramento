@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Arquivo;
+use App\Models\Campanha;
 use App\Models\Dependente;
 use App\Models\Escolaridade;
 use App\Models\Recadastramento;
@@ -292,18 +293,21 @@ class RecadastramentoController extends Controller {
         $per_page = PHP_INT_MAX;
         $page = 0;
         $situacao = $request->situacao;
+        $idCampanha = $request->campanha;
+        $campanha = $idCampanha ? Campanha::where('id', $idCampanha)->first() : null;
         $criterios = [
             'filtro' => empty($filter) ? 'Nenhum' : $filter,
             'ordenacao' => Recadastramento::CAMPOS_RECADASTRAMENTO[$orderBy] . ' ' . $sortOrder,
             'situacao' => empty($situacao) ? 'Todos enviados' : Recadastramento::SITUACAO_RECADASTRAMENTO[$situacao],
+            'campanha' => $idCampanha ? $campanha->descricao : '',
             'situacoes' => implode(', ', array_map(function ($v, $k) { return sprintf("%s=%s", $k, $v); }, Recadastramento::SITUACAO_RECADASTRAMENTO, array_keys(Recadastramento::SITUACAO_RECADASTRAMENTO))),
         ];
         if ($situacao === 'S') {
-            $recadastramentos = $this->listarSomenteRecusados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page);
+            $recadastramentos = $this->listarSomenteRecusados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $idCampanha);
         } else if ($situacao === 'N') {
-            $recadastramentos = $this->listarNaoRealizados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $request);
+            $recadastramentos = $this->listarNaoRealizados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $request, $idCampanha);
         } else {
-            $recadastramentos = $this->listarRecadastramentos($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $situacao)->items();
+            $recadastramentos = $this->listarRecadastramentos($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $situacao, $idCampanha)->items();
         }
         $pdf = PDF::loadView('recadastramento-consulta', compact('recadastramentos', 'criterios'));
         return $pdf->download('consulta.pdf');
@@ -322,20 +326,24 @@ class RecadastramentoController extends Controller {
         $page = $request->page ?? 0;
         $per_page = $request->per_page ?? 10;
         $situacao = $request->situacao;
+        $campanha = $request->campanha;
         
         if ($situacao === 'S') {
-            return response()->json($this->listarSomenteRecusados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page));
+            return response()->json($this->listarSomenteRecusados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $campanha));
         }
         if ($situacao === 'N') {
-            return response()->json($this->listarNaoRealizados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $request));
+            return response()->json($this->listarNaoRealizados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $request, $campanha));
         }
-        return response()->json($this->listarRecadastramentos($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $situacao));
+        return response()->json($this->listarRecadastramentos($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $situacao, $campanha));
     }
     
-    private function listarRecadastramentos($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $situacao) {
+    private function listarRecadastramentos($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $situacao, $campanha) {
         $retorno = Recadastramento::query()
                 ->when($matricula, function ($q) use ($matricula) {
                     return $q->where('matricula', $matricula);
+                })
+                ->when($campanha, function ($q) use ($campanha) {
+                    return $q->where('id_campanha', $campanha);
                 })
                 ->when($situacao, function ($q) use ($situacao) {
                     return $q->where('situacao', $situacao);
@@ -353,10 +361,13 @@ class RecadastramentoController extends Controller {
         return $retorno;
     }
     
-    private function listarSomenteRecusados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page) {
+    private function listarSomenteRecusados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $campanha) {
         $retorno = Recadastramento::query()
                 ->when($matricula, function ($q) use ($matricula) {
                     return $q->where('matricula', $matricula);
+                })
+                ->when($campanha, function ($q) use ($campanha) {
+                    return $q->where('id_campanha', $campanha);
                 })
                 ->when($filter, function($q) use ($filter) {
                     return $q->where(function($query) use ($filter) {
@@ -378,8 +389,22 @@ class RecadastramentoController extends Controller {
         return $retorno;
     }
     
-    private function listarNaoRealizados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $request) {
+    private function listarNaoRealizados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $request, $idCampanha) {
         $condicaoServidorAtivo = UsuarioController::CONDICAO_SERVIDOR_ATIVO;
+        $condicaoAniversario = '';
+        
+        if ($idCampanha) {
+            $campanha = Campanha::with('meses')->where('id', $idCampanha)->first();
+            $inMes = '';
+            foreach ($campanha->meses as $mes) {
+                $inMes .= $mes->mes . ', ';
+            }
+            $inMes = rtrim($inMes, ', ');
+            if (!empty($inMes)) {
+                $condicaoAniversario = " AND EXTRACT(MONTH FROM p.rh01_nasc) IN ($inMes) ";
+            }
+            
+        }
 
         $eCidadeDatabaseHost = env('DB_HOST_ECIDADE');
         $eCidadeDatabaseName = DB::connection('ecidade')->getDatabaseName();
@@ -412,6 +437,7 @@ class RecadastramentoController extends Controller {
                     INNER JOIN protocolo.cgm c ON p.rh01_numcgm = c.z01_numcgm 
                 WHERE
                     $condicaoServidorAtivo
+                    $condicaoAniversario
                 $$) AS e (
                     matricula int,
                     nome char(40)
