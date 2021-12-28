@@ -45,6 +45,7 @@ $router->group(['middleware' => 'auth'], function () use ($router) {
     $router->group(['prefix' => 'campanha'], function () use ($router) {
         $router->group(['middleware' => ['role:servidor|validador']], function () use ($router) {
             $router->get('', 'CampanhaController@listar');
+            $router->get('elegivel', 'CampanhaController@buscarElegivel');
         });
         $router->group(['middleware' => ['role:validador']], function () use ($router) {
             $router->post('', 'CampanhaController@criar');

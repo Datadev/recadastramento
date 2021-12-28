@@ -34,7 +34,7 @@ class Recadastramento extends BaseModel implements Auditable {
     protected $table = 'recadastramento';
     protected $fillable = ['matricula', 'sexo', 'estadoCivil','nome', 'pai', 'mae', 'nascimento', 'telefone', 'email', 'endereco', 'numero', 'complemento',
         'bairro', 'cidade', 'uf', 'cep', 'cpf', 'pis', 'rg', 'expedicaoRg', 'orgaoRg', 'possuiCtps', 'numeroCtps', 'digitoCtps', 'serieCtps', 'expedicaoCtps', 
-        'ufCtps', 'possuiCnh', 'numeroCnh', 'validadeCnh', 'emissaoCnh', 'categoriaCnh', 'numeroTe', 'zonaTe', 'secaoTe', 'grauInstrucao', 'codigo', 'situacao', 'motivoSituacao'];
+        'ufCtps', 'possuiCnh', 'numeroCnh', 'validadeCnh', 'emissaoCnh', 'categoriaCnh', 'numeroTe', 'zonaTe', 'secaoTe', 'grauInstrucao', 'codigo', 'situacao', 'motivoSituacao', 'idCampanha'];
     
     public function getPossuiCtpsAttribute($value) {
         return $value ? 'S' : 'N';

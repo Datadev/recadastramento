@@ -63,7 +63,7 @@ class RecadastramentoController extends Controller {
 
         return response()->json($recadastramento);
     }
-
+    
     public function buscarPorId($idRecadastramento) {
         return response()->json(Recadastramento::where('id', $idRecadastramento)->first());
     }
@@ -544,6 +544,7 @@ class RecadastramentoController extends Controller {
 
     private function adicionarRecadastramento(Request $request): Recadastramento {
         $dadosRecadastramento = $request->all();
+        $dadosRecadastramento['idCampanha'] = $request->idCampanha;
         $dadosRecadastramento['codigo'] = Uuid::uuid4();
         $dadosRecadastramento['situacao'] = 'P';
         $dadosRecadastramento['grauInstrucao'] = $request->grauInstrucao['chave'];
