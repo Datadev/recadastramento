@@ -5,7 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Dependente;
 use App\Models\Escolaridade;
 use App\Models\Recadastramento;
+use Illuminate\Support\Facades\DB;
 use Laravel\Lumen\Routing\Controller;
+use PDO;
+use function dd;
 use function response;
 
 /**
@@ -80,6 +83,33 @@ class ConfiguracaoController extends Controller {
         26 => 'SE',
         27 => 'TO',
     ];
+    
+    public function getTipoContrato(): array {
+        DB::connection('ecidade')->beginTransaction();
+        DB::connection('ecidade')->select("SET NAMES 'utf8'");
+        $resultado = DB::connection('ecidade')->select("
+            SELECT 
+                c.h13_codigo as chave,
+                '(' || r.rh127_descricao || ') ' || c.h13_descr as valor
+            FROM 
+                recursoshumanos.tpcontra c
+                INNER JOIN pessoal.regimeprevidencia r ON c.h13_regime = r.rh127_sequencial
+            ORDER BY
+                c.h13_codigo ASC;
+        ");
+        DB::connection('ecidade')->commit();
+//        $array = (array) $resultado;
+//        return array_map(array($this, 'encode_all_strings'), $array);
+        return $resultado;
+    }
+    
+    private function encode_all_strings($arr) {
+        foreach($arr as $key => $value) {
+            $arr[$key] = $value;
+        }
+        return $arr;
+    }
+
 
     public function getConfiguracaoList() {
         $config = [
@@ -93,6 +123,7 @@ class ConfiguracaoController extends Controller {
             'sexo' => $this->converterChaveValor(self::SEXO),
             'simnao' => $this->converterChaveValor(self::SIMNAO),
             'situacaoRecadastramento' => $this->converterChaveValor(Recadastramento::SITUACAO_RECADASTRAMENTO),
+            'tipoContrato' => $this->getTipoContrato(),
             'uf' => $this->converterChaveValor(self::UF),
         ];
         return response()->json($config, 200);

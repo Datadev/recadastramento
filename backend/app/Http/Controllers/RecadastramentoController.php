@@ -303,6 +303,7 @@ class RecadastramentoController extends Controller {
         $situacao = $request->situacao;
         $idCampanha = $request->campanha;
         $campanha = $idCampanha ? Campanha::where('id', $idCampanha)->first() : null;
+        $idTipoContrato = $request->tipoContrato;
         $criterios = [
             'filtro' => empty($filter) ? 'Nenhum' : $filter,
             'ordenacao' => Recadastramento::CAMPOS_RECADASTRAMENTO[$orderBy] . ' ' . $sortOrder,
@@ -313,7 +314,7 @@ class RecadastramentoController extends Controller {
         if ($situacao === 'S') {
             $recadastramentos = $this->listarSomenteRecusados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $idCampanha);
         } else if ($situacao === 'N') {
-            $recadastramentos = $this->listarNaoRealizados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $request, $idCampanha);
+            $recadastramentos = $this->listarNaoRealizados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $request, $idCampanha, $idTipoContrato);
         } else {
             $recadastramentos = $this->listarRecadastramentos($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $situacao, $idCampanha)->items();
         }
@@ -335,12 +336,13 @@ class RecadastramentoController extends Controller {
         $per_page = $request->per_page ?? 10;
         $situacao = $request->situacao;
         $campanha = $request->campanha;
+        $tipoContrato = $request->tipoContrato;
         
         if ($situacao === 'S') {
             return response()->json($this->listarSomenteRecusados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $campanha));
         }
         if ($situacao === 'N') {
-            return response()->json($this->listarNaoRealizados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $request, $campanha));
+            return response()->json($this->listarNaoRealizados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $request, $campanha, $tipoContrato));
         }
         return response()->json($this->listarRecadastramentos($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $situacao, $campanha));
     }
@@ -397,9 +399,9 @@ class RecadastramentoController extends Controller {
         return $retorno;
     }
     
-    private function listarNaoRealizados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $request, $idCampanha) {
-        $condicaoServidorAtivo = UsuarioController::CONDICAO_SERVIDOR_ATIVO;
+    private function listarNaoRealizados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $request, $idCampanha, $idTipoContrato) {
         $condicaoAniversario = '';
+        $condicaoTipoContrato = '';
         
         if ($idCampanha) {
             $campanha = Campanha::with('meses')->where('id', $idCampanha)->first();
@@ -411,7 +413,10 @@ class RecadastramentoController extends Controller {
             if (!empty($inMes)) {
                 $condicaoAniversario = " AND EXTRACT(MONTH FROM p.rh01_nasc) IN ($inMes) ";
             }
-            
+        }
+        
+        if ($idTipoContrato) {
+            $condicaoTipoContrato = " AND pm2.rh02_tpcont = $idTipoContrato ";
         }
 
         $eCidadeDatabaseHost = env('DB_HOST_ECIDADE');
@@ -443,9 +448,14 @@ class RecadastramentoController extends Controller {
                 FROM 
                     pessoal.rhpessoal p
                     INNER JOIN protocolo.cgm c ON p.rh01_numcgm = c.z01_numcgm 
+                    INNER JOIN pessoal.rhpessoalmov pm2 ON pm2.rh02_regist = p.rh01_regist
+                    LEFT JOIN pessoal.rhpessoalmov pm3 ON (pm3.rh02_regist = p.rh01_regist AND pm2.rh02_seqpes < pm3.rh02_seqpes)
+                    LEFT JOIN pessoal.rhpesrescisao pr ON pm2.rh02_seqpes = pr.rh05_seqpes 
                 WHERE
-                    $condicaoServidorAtivo
+                    pm3.rh02_seqpes IS NULL
+                    AND pr.rh05_seqpes IS NULL
                     $condicaoAniversario
+                    $condicaoTipoContrato
                 $$) AS e (
                     matricula int,
                     nome char(40)
