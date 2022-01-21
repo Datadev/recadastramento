@@ -54,7 +54,7 @@ class TokenController extends Controller {
 
     public function revogarToken(Request $request) {
         $accessToken = $this->obterTokenDoCabecalho($request);
-        $refreshToken = $request->REFRESH_TOKEN;
+        $refreshToken = $request->refresh_token;
 
         try {
             $dadosAccessToken = JWT::decode($accessToken, env('JWT_KEY'), ['HS256']);
@@ -102,7 +102,7 @@ class TokenController extends Controller {
 
     public function atualizarToken(Request $request) {
         try {
-            $refreshToken = $request->REFRESH_TOKEN;
+            $refreshToken = $request->refresh_token;
             if (!$this->validarToken($refreshToken)) {
                 throw new \Exception('Token inválido');
             }
