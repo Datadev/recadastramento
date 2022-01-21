@@ -7,8 +7,6 @@ use App\Models\Escolaridade;
 use App\Models\Recadastramento;
 use Illuminate\Support\Facades\DB;
 use Laravel\Lumen\Routing\Controller;
-use PDO;
-use function dd;
 use function response;
 
 /**
@@ -98,8 +96,6 @@ class ConfiguracaoController extends Controller {
                 c.h13_codigo ASC;
         ");
         DB::connection('ecidade')->commit();
-//        $array = (array) $resultado;
-//        return array_map(array($this, 'encode_all_strings'), $array);
         return $resultado;
     }
     

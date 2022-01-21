@@ -316,7 +316,7 @@ class RecadastramentoController extends Controller {
         } else if ($situacao === 'N') {
             $recadastramentos = $this->listarNaoRealizados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $request, $idCampanha, $idTipoContrato);
         } else {
-            $recadastramentos = $this->listarRecadastramentos($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $situacao, $idCampanha)->items();
+            $recadastramentos = $this->listarRecadastramentos($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $situacao, $idCampanha, $idTipoContrato)->items();
         }
         $pdf = PDF::loadView('recadastramento-consulta', compact('recadastramentos', 'criterios'));
         return $pdf->download('consulta.pdf');
@@ -336,18 +336,18 @@ class RecadastramentoController extends Controller {
         $per_page = $request->per_page ?? 10;
         $situacao = $request->situacao;
         $campanha = $request->campanha;
-        $tipoContrato = $request->tipoContrato;
-        
+        $idTipoContrato = $request->tipoContrato;
+                
         if ($situacao === 'S') {
-            return response()->json($this->listarSomenteRecusados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $campanha));
+            return response()->json($this->listarSomenteRecusados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $campanha, $idTipoContrato));
         }
         if ($situacao === 'N') {
-            return response()->json($this->listarNaoRealizados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $request, $campanha, $tipoContrato));
+            return response()->json($this->listarNaoRealizados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $request, $campanha, $idTipoContrato));
         }
-        return response()->json($this->listarRecadastramentos($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $situacao, $campanha));
+        return response()->json($this->listarRecadastramentos($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $situacao, $campanha, $idTipoContrato));
     }
     
-    private function listarRecadastramentos($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $situacao, $campanha) {
+    private function listarRecadastramentos($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $situacao, $campanha, $idTipoContrato) {
         $retorno = Recadastramento::query()
                 ->when($matricula, function ($q) use ($matricula) {
                     return $q->where('matricula', $matricula);
@@ -366,12 +366,39 @@ class RecadastramentoController extends Controller {
                         ->orWhereRaw('lower(nome) like ?', ['%' . strtolower($filter) . '%']);
                     });
                 })
+                ->when($idTipoContrato, function ($q) use ($idTipoContrato) {
+                    $eCidadeDatabaseHost = env('DB_HOST_ECIDADE');
+                    $eCidadeDatabaseName = DB::connection('ecidade')->getDatabaseName();
+                    $eCidadeDatabaseUser = env('DB_USERNAME_ECIDADE');
+                    $eCidadeDatabasePassword = env('DB_PASSWORD_ECIDADE');
+                    return $q->whereRaw("matricula IN (
+                        SELECT DISTINCT
+                            e.matricula
+                        FROM 
+                            dblink('host=$eCidadeDatabaseHost dbname=$eCidadeDatabaseName user=$eCidadeDatabaseUser password=$eCidadeDatabasePassword', $$
+                                SELECT DISTINCT
+                                    p.rh01_regist AS matricula
+                                FROM 
+                                    pessoal.rhpessoal p
+                                    INNER JOIN protocolo.cgm c ON p.rh01_numcgm = c.z01_numcgm 
+                                    INNER JOIN pessoal.rhpessoalmov pm2 ON pm2.rh02_regist = p.rh01_regist
+                                    LEFT JOIN pessoal.rhpessoalmov pm3 ON (pm3.rh02_regist = p.rh01_regist AND pm2.rh02_seqpes < pm3.rh02_seqpes)
+                                    LEFT JOIN pessoal.rhpesrescisao pr ON pm2.rh02_seqpes = pr.rh05_seqpes 
+                                WHERE
+                                    pm3.rh02_seqpes IS NULL
+                                    AND pr.rh05_seqpes IS NULL
+                                    AND pm2.rh02_tpcont = " . pg_escape_string($idTipoContrato) . "
+                            $$)AS e (
+                                matricula int
+                            )
+                        )");
+                })
                 ->orderBy($orderBy, $sortOrder)
                 ->paginate($per_page, ['*'], 'page', $page);
         return $retorno;
     }
     
-    private function listarSomenteRecusados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $campanha) {
+    private function listarSomenteRecusados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $campanha, $idTipoContrato) {
         $retorno = Recadastramento::query()
                 ->when($matricula, function ($q) use ($matricula) {
                     return $q->where('matricula', $matricula);
@@ -394,6 +421,33 @@ class RecadastramentoController extends Controller {
                             ->where('situacao', 'A');
                 })
                 ->where('situacao', 'R')
+                ->when($idTipoContrato, function ($q) use ($idTipoContrato) {
+                    $eCidadeDatabaseHost = env('DB_HOST_ECIDADE');
+                    $eCidadeDatabaseName = DB::connection('ecidade')->getDatabaseName();
+                    $eCidadeDatabaseUser = env('DB_USERNAME_ECIDADE');
+                    $eCidadeDatabasePassword = env('DB_PASSWORD_ECIDADE');
+                    return $q->whereRaw("matricula IN (
+                        SELECT DISTINCT
+                            e.matricula
+                        FROM 
+                            dblink('host=$eCidadeDatabaseHost dbname=$eCidadeDatabaseName user=$eCidadeDatabaseUser password=$eCidadeDatabasePassword', $$
+                                SELECT DISTINCT
+                                    p.rh01_regist AS matricula
+                                FROM 
+                                    pessoal.rhpessoal p
+                                    INNER JOIN protocolo.cgm c ON p.rh01_numcgm = c.z01_numcgm 
+                                    INNER JOIN pessoal.rhpessoalmov pm2 ON pm2.rh02_regist = p.rh01_regist
+                                    LEFT JOIN pessoal.rhpessoalmov pm3 ON (pm3.rh02_regist = p.rh01_regist AND pm2.rh02_seqpes < pm3.rh02_seqpes)
+                                    LEFT JOIN pessoal.rhpesrescisao pr ON pm2.rh02_seqpes = pr.rh05_seqpes 
+                                WHERE
+                                    pm3.rh02_seqpes IS NULL
+                                    AND pr.rh05_seqpes IS NULL
+                                    AND pm2.rh02_tpcont = " . pg_escape_string($idTipoContrato) . "
+                            $$)AS e (
+                                matricula int
+                            )
+                        )");
+                })
                 ->orderBy($orderBy, $sortOrder)
                 ->paginate($per_page, ['*'], 'page', $page);
         return $retorno;
