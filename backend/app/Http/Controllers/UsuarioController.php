@@ -143,7 +143,7 @@ class UsuarioController extends Controller {
                 LEFT JOIN pessoal.rhpessoalmov pm2 ON (pm2.rh02_regist = p.rh01_regist AND pm1.rh02_seqpes < pm2.rh02_seqpes)
                 LEFT JOIN pessoal.rhpesrescisao pr ON pm1.rh02_seqpes = pr.rh05_seqpes 
             WHERE 
-                pm1.rh02_seqpes IS NULL
+                pm2.rh02_seqpes IS NULL
                 AND pr.rh05_seqpes IS NULL
                 AND p.rh01_regist = :matricula
                 AND p.rh01_nasc = :nascimento
