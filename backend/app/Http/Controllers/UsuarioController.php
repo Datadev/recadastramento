@@ -128,9 +128,7 @@ class UsuarioController extends Controller {
         }
     }
 
-    private function isPodeGerarSenha($matricula, $cpf, $nascimento): bool {
-        $condicaoServidorAtivo = UsuarioController::CONDICAO_SERVIDOR_ATIVO;
-        
+    private function isPodeGerarSenha($matricula, $cpf, $nascimento): bool {      
         $resultado = DB::connection('ecidade')->select("
             SELECT
                 p.rh01_regist,
@@ -141,8 +139,12 @@ class UsuarioController extends Controller {
             FROM 
                 pessoal.rhpessoal p
                 INNER JOIN protocolo.cgm c ON p.rh01_numcgm = c.z01_numcgm 
+                INNER JOIN pessoal.rhpessoalmov pm1 ON pm1.rh02_regist = p.rh01_regist
+                LEFT JOIN pessoal.rhpessoalmov pm2 ON (pm2.rh02_regist = p.rh01_regist AND pm1.rh02_seqpes < pm2.rh02_seqpes)
+                LEFT JOIN pessoal.rhpesrescisao pr ON pm1.rh02_seqpes = pr.rh05_seqpes 
             WHERE 
-                $condicaoServidorAtivo
+                pm1.rh02_seqpes IS NULL
+                AND pr.rh05_seqpes IS NULL
                 AND p.rh01_regist = :matricula
                 AND p.rh01_nasc = :nascimento
                 AND c.z01_cgccpf = :cpf", [
