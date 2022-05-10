@@ -598,6 +598,9 @@ class RecadastramentoController extends Controller {
     private function enviarEmailRecadastramentoRecusado(Recadastramento $recadastramento, User $usuario) {
         $dados = [
             'codigo' => $recadastramento->codigo,
+            'matricula' => $usuario->login,
+            'nome' => $usuario->nome,
+            'motivoSituacao' => $recadastramento->motivoSituacao
         ];
         Mail::send('recadastramento-recusado', $dados, function ($message) use ($usuario) {
             $message
