@@ -45,6 +45,7 @@ class RecadastramentoController extends Controller {
         $servidor = User::where('login', $recadastramento->matricula)->first();
         
         $recadastramento->situacao = $request->situacao;
+        $recadastramento->motivoSituacao = $request->motivoSituacao;
 
         if ($recadastramento->situacao === 'A') {
             try {
@@ -56,7 +57,6 @@ class RecadastramentoController extends Controller {
                 return response()->json(['message' => 'Falha ao processar o recadastramento'], 500);
             }
         } else if ($recadastramento->situacao === 'R') {
-            $recadastramento->motivoSituacao = $request->motivoSituacao;
             $recadastramento->save();
             $this->enviarEmailRecadastramentoRecusado($recadastramento, $servidor);
         }
@@ -65,6 +65,16 @@ class RecadastramentoController extends Controller {
     }
     
     public function buscarPorId($idRecadastramento) {
+        return response()->json(Recadastramento::where('id', $idRecadastramento)->first());
+    }
+    
+    public function remover($idRecadastramento) {
+        DB::beginTransaction();
+        Arquivo::where('id_recadastramento', $idRecadastramento)->delete();
+        Dependente::where('id_recadastramento', $idRecadastramento)->delete();
+        Escolaridade::where('id_recadastramento', $idRecadastramento)->delete();
+        Recadastramento::find($idRecadastramento)->delete();
+        DB::commit();
         return response()->json(Recadastramento::where('id', $idRecadastramento)->first());
     }
 
@@ -264,7 +274,7 @@ class RecadastramentoController extends Controller {
         }
     }
     
-    private function deParaEstadoCivil($valor): string {
+    private function deParaEstadoCivil(string $valor): string {
         $retorno = $valor;
         if ($valor === '6'){
             $retorno = '2';
@@ -272,7 +282,7 @@ class RecadastramentoController extends Controller {
         return $retorno;
     }
     
-    private function deParaGrauInstrucao($valor): string {
+    private function deParaGrauInstrucao(string $valor): string {
         $retorno = $valor;
         if ($valor === '12'){
             $retorno = '9';
@@ -587,6 +597,9 @@ class RecadastramentoController extends Controller {
     private function enviarEmailRecadastramentoAprovado(Recadastramento $recadastramento, User $usuario) {
         $dados = [
             'codigo' => $recadastramento->codigo,
+            'matricula' => $usuario->login,
+            'nome' => $usuario->nome,
+            'motivoSituacao' => $recadastramento->motivoSituacao
         ];
         Mail::send('recadastramento-aprovado', $dados, function ($message) use ($usuario) {
             $message

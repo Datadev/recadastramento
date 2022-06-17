@@ -99,7 +99,9 @@
                                                                   <td style="padding:20px;Margin:0" align="left">
                                                                      <h1 style="Margin:0;line-height:36px;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;font-size:30px;font-style:normal;font-weight:normal;color:#333333">Olá,</h1>
                                                                      <p style="Margin:0;-webkit-text-size-adjust:none;-ms-text-size-adjust:none;mso-line-height-rule:exactly;font-family:arial, 'helvetica neue', helvetica, sans-serif;line-height:21px;color:#333333;font-size:14px">
+                                                                        <br>{{ $matricula }} - {{ $nome }}
                                                                         <br>Seu recadastramento foi aprovado.
+                                                                        <br>{{ $motivoSituacao }}
                                                                         <br>
                                                                         <br>
                                                                      </p>

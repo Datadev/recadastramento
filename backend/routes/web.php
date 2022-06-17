@@ -36,6 +36,7 @@ $router->group(['middleware' => 'auth'], function () use ($router) {
             $router->post('email', 'RecadastramentoController@email');
             $router->get('{idRecadastramento}', 'RecadastramentoController@buscarPorId');
             $router->patch('{idRecadastramento}', 'RecadastramentoController@alterarSituacao');
+            $router->delete('{idRecadastramento}', 'RecadastramentoController@remover');
             $router->get('{idRecadastramento}/dependente', 'RecadastramentoController@listarDependente');
             $router->get('{idRecadastramento}/escolaridade', 'RecadastramentoController@listarEscolaridade');
             $router->get('{idRecadastramento}/arquivo', 'RecadastramentoController@listarArquivo');
