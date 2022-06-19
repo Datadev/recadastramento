@@ -93,7 +93,9 @@
            Ordenação: {{$criterios['ordenacao']}}<br/>
            Situação: {{$criterios['situacao']}}<br/>
            Campanha: {{$criterios['campanha']}}<br/>
-           Situações: {{$criterios['situacoes']}}
+           Situações: {{$criterios['situacoes']}}<br/>
+           Início do período: {{$criterios['dateRangeStart']}}<br/>
+           Fim do período: {{$criterios['dateRangeEnd']}}
        </p>
        <table border="1" width="100%" style="border-collapse: collapse;">
            <thead>
@@ -101,6 +103,8 @@
                     <th>Data</th>
                     <th>Matrícula</th>
                     <th>Nome</th>
+                    <th>Telefone</th>
+                    <th>E-mail</th>
                     <th>Protocolo</th>
                     <th>Situação</th>
                 </tr>
@@ -111,6 +115,8 @@
                     <td>{{isset($recadastramento->created_at) ? date('d/m/Y', strtotime($recadastramento->created_at)) : ''}}</td>
                     <td>{{$recadastramento->matricula}}</td>
                     <td>{{$recadastramento->nome}}</td>
+                    <td>{{$recadastramento->telefone}}</td>
+                    <td>{{$recadastramento->email}}</td>
                     <td>{{$recadastramento->codigo}}</td>
                     <td>{{$recadastramento->situacao}}</td>
                 </tr>

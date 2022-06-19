@@ -9,6 +9,7 @@ use App\Models\Escolaridade;
 use App\Models\Recadastramento;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade as PDF;
+use DateTime;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -314,22 +315,35 @@ class RecadastramentoController extends Controller {
         $idCampanha = $request->campanha;
         $campanha = $idCampanha ? Campanha::where('id', $idCampanha)->first() : null;
         $idTipoContrato = $request->tipoContrato;
+        $dateRangeStart = $request->dateRangeStart;
+        $dateRangeEnd = $request->dateRangeEnd;
+        
         $criterios = [
             'filtro' => empty($filter) ? 'Nenhum' : $filter,
             'ordenacao' => Recadastramento::CAMPOS_RECADASTRAMENTO[$orderBy] . ' ' . $sortOrder,
             'situacao' => empty($situacao) ? 'Todos enviados' : Recadastramento::SITUACAO_RECADASTRAMENTO[$situacao],
             'campanha' => $idCampanha ? $campanha->descricao : '',
             'situacoes' => implode(', ', array_map(function ($v, $k) { return sprintf("%s=%s", $k, $v); }, Recadastramento::SITUACAO_RECADASTRAMENTO, array_keys(Recadastramento::SITUACAO_RECADASTRAMENTO))),
+            'dateRangeStart' => $dateRangeStart,
+            'dateRangeEnd' => $dateRangeEnd,
         ];
+        $dateRangeStart = $request->dateRangeStart ? $this->converterParaDataSQL($request->dateRangeStart) . ' 00:00:00' : $request->dateRangeStart ;
+        $dateRangeEnd = $request->dateRangeEnd ? $this->converterParaDataSQL($request->dateRangeEnd) . ' 23:59:59' : $request->dateRangeEnd;
         if ($situacao === 'S') {
-            $recadastramentos = $this->listarSomenteRecusados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $idCampanha);
+            $recadastramentos = $this->listarSomenteRecusados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $idCampanha, $dateRangeStart, $dateRangeEnd);
         } else if ($situacao === 'N') {
             $recadastramentos = $this->listarNaoRealizados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $request, $idCampanha, $idTipoContrato);
         } else {
-            $recadastramentos = $this->listarRecadastramentos($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $situacao, $idCampanha, $idTipoContrato)->items();
+            $recadastramentos = $this->listarRecadastramentos($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $situacao, $idCampanha, $idTipoContrato, $dateRangeStart, $dateRangeEnd)->items();
         }
         $pdf = PDF::loadView('recadastramento-consulta', compact('recadastramentos', 'criterios'));
         return $pdf->download('consulta.pdf');
+    }
+    
+    private function converterParaDataSQL(string $data): string {
+        /** @var DateTime $date */
+        $date = DateTime::createFromFormat('d/m/Y', $data);
+        return $date->format('Y-m-d');
     }
 
     public function listar(Request $request) {
@@ -347,17 +361,19 @@ class RecadastramentoController extends Controller {
         $situacao = $request->situacao;
         $campanha = $request->campanha;
         $idTipoContrato = $request->tipoContrato;
-                
+        $dateRangeStart = $request->dateRangeStart ? $this->converterParaDataSQL($request->dateRangeStart) . ' 00:00:00' : $request->dateRangeStart ;
+        $dateRangeEnd = $request->dateRangeEnd ? $this->converterParaDataSQL($request->dateRangeEnd) . ' 23:59:59' : $request->dateRangeEnd;
+        
         if ($situacao === 'S') {
-            return response()->json($this->listarSomenteRecusados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $campanha, $idTipoContrato));
+            return response()->json($this->listarSomenteRecusados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $campanha, $idTipoContrato, $dateRangeStart, $dateRangeEnd));
         }
         if ($situacao === 'N') {
             return response()->json($this->listarNaoRealizados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $request, $campanha, $idTipoContrato));
         }
-        return response()->json($this->listarRecadastramentos($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $situacao, $campanha, $idTipoContrato));
+        return response()->json($this->listarRecadastramentos($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $situacao, $campanha, $idTipoContrato, $dateRangeStart, $dateRangeEnd));
     }
     
-    private function listarRecadastramentos($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $situacao, $campanha, $idTipoContrato) {
+    private function listarRecadastramentos($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $situacao, $campanha, $idTipoContrato, $dateRangeStart, $dateRangeEnd) {
         $retorno = Recadastramento::query()
                 ->when($matricula, function ($q) use ($matricula) {
                     return $q->where('matricula', $matricula);
@@ -403,12 +419,18 @@ class RecadastramentoController extends Controller {
                             )
                         )");
                 })
+                ->when($dateRangeStart, function($q) use ($dateRangeStart) {
+                    return $q->where('created_at', '>=', $dateRangeStart);
+                })
+                ->when($dateRangeEnd, function($q) use ($dateRangeEnd) {
+                    return $q->where('created_at', '<=', $dateRangeEnd);
+                })
                 ->orderBy($orderBy, $sortOrder)
                 ->paginate($per_page, ['*'], 'page', $page);
         return $retorno;
     }
     
-    private function listarSomenteRecusados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $campanha, $idTipoContrato) {
+    private function listarSomenteRecusados($matricula, $filter, $orderBy, $sortOrder, $per_page, $page, $campanha, $idTipoContrato, $dateRangeStart, $dateRangeEnd) {
         $retorno = Recadastramento::query()
                 ->when($matricula, function ($q) use ($matricula) {
                     return $q->where('matricula', $matricula);
@@ -457,6 +479,12 @@ class RecadastramentoController extends Controller {
                                 matricula int
                             )
                         )");
+                })
+                ->when($dateRangeStart, function($q) use ($dateRangeStart) {
+                    return $q->where('created_at', '>=', $dateRangeStart);
+                })
+                ->when($dateRangeEnd, function($q) use ($dateRangeEnd) {
+                    return $q->where('created_at', '<=', $dateRangeEnd);
                 })
                 ->orderBy($orderBy, $sortOrder)
                 ->paginate($per_page, ['*'], 'page', $page);
