@@ -179,7 +179,7 @@ class RecadastramentoController extends Controller {
 
             $rh16_regist = $rh01_regist;
             $rh16_pis = $this->prepararValor($recadastramento->pis);
-            if ($recadastramento->possuiCnh === 'S'){
+            if ($recadastramento->possuiCtps === 'S'){
                 $rh16_ctps_n = $this->prepararValor($recadastramento->numeroCtps, '0');
                 $rh16_ctps_d = $this->prepararValor($recadastramento->digitoCtps, '0');
                 $rh16_ctps_s = $this->prepararValor($recadastramento->serieCtps, '0');
